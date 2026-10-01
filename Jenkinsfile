@@ -13,9 +13,14 @@ pipeline {
             description: 'Application Listening Port for Target Server'
         )
         booleanParam(
-            name: 'RUN_TESTS',
+            name: 'RUN_UNIT_TESTS',
             defaultValue: true,
-            description: 'Execute automated pytest suite before packaging and deployment'
+            description: 'Execute unit and integration test suite'
+        )
+        booleanParam(
+            name: 'RUN_UI_TESTS',
+            defaultValue: true,
+            description: 'Execute automated Headless Selenium UI regression test suite'
         )
     }
 
@@ -23,14 +28,14 @@ pipeline {
         APP_NAME = 'digital-library-portal'
         VENV_DIR = '.venv'
         PYTHONUNBUFFERED = '1'
+        BASE_URL = "http://127.0.0.1:${params.PORT}"
         BUILD_TIMESTAMP = sh(script: 'date +%Y%m%d_%H%M%S', returnStdout: true).trim()
-        DEPLOY_DIR = "/opt/${APP_NAME}/${params.ENVIRONMENT}"
         DEPLOY_URL = "http://localhost:${params.PORT}"
     }
 
     options {
-        timeout(time: 15, unit: 'MINUTES')
-        buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '5'))
+        timeout(time: 20, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '15', artifactNumToKeepStr: '10'))
         ansiColor('xterm')
         disableConcurrentBuilds()
     }
@@ -39,8 +44,8 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "=========================================================="
-                echo "Stage 1: Checkout Source Code from Repository"
-                echo "Job Name: ${env.JOB_NAME} | Build ID: ${env.BUILD_NUMBER}"
+                echo "Stage 1: Checkout Source Code"
+                echo "Job: ${env.JOB_NAME} | Build: #${env.BUILD_NUMBER}"
                 echo "Target Environment: ${params.ENVIRONMENT} | Port: ${params.PORT}"
                 echo "=========================================================="
                 checkout scm
@@ -54,44 +59,68 @@ pipeline {
         stage('Build/Dependencies') {
             steps {
                 echo "=========================================================="
-                echo "Stage 2: Provisioning Virtualenv & Dependencies"
+                echo "Stage 2: Setup Environment & Dependencies"
                 echo "=========================================================="
                 sh '''
-                    # Set up isolated virtual environment
                     python3 -m venv ${VENV_DIR} || python -m venv ${VENV_DIR}
                     . ${VENV_DIR}/bin/activate || . ${VENV_DIR}/Scripts/activate
 
-                    # Upgrade package managers
                     pip install --upgrade pip setuptools wheel
-
-                    # Install required project dependencies
                     pip install -r requirements.txt
 
-                    # Verify Flask and Pytest installations
-                    python -c "import flask, sqlite3; print(f'Flask {flask.__version__} and SQLite3 {sqlite3.sqlite_version} ready.')"
+                    python -c "import flask, selenium; print(f'Flask {flask.__version__} & Selenium {selenium.__version__} verified.')"
                 '''
             }
         }
 
-        stage('Test & Quality Gate') {
+        stage('Unit Testing') {
             when {
-                expression { return params.RUN_TESTS == true }
+                expression { return params.RUN_UNIT_TESTS == true }
             }
             steps {
                 echo "=========================================================="
-                echo "Stage 3: Running Automated Test Suites"
+                echo "Stage 3: Running Automated Unit & Integration Tests"
                 echo "=========================================================="
                 sh '''
                     . ${VENV_DIR}/bin/activate || . ${VENV_DIR}/Scripts/activate
                     mkdir -p reports
-
-                    # Execute unit and integration tests with JUnit XML reporter
-                    pytest -v tests/ --junitxml=reports/test-results.xml
+                    pytest -v tests/test_app.py --junitxml=reports/unit-results.xml
                 '''
             }
             post {
                 always {
-                    junit allowEmptyResults: true, testResults: 'reports/test-results.xml'
+                    junit allowEmptyResults: true, testResults: 'reports/unit-results.xml'
+                }
+            }
+        }
+
+        stage('Continuous Testing (Selenium E2E)') {
+            when {
+                expression { return params.RUN_UI_TESTS == true }
+            }
+            steps {
+                echo "=========================================================="
+                echo "Stage 4: Automated End-to-End Headless Selenium Testing"
+                echo "=========================================================="
+                sh '''
+                    . ${VENV_DIR}/bin/activate || . ${VENV_DIR}/Scripts/activate
+                    mkdir -p reports/screenshots
+
+                    # Ensure Chrome/Chromium is accessible in headless mode
+                    export BASE_URL="http://127.0.0.1:${PORT}"
+                    
+                    # Run Selenium UI test suite. Non-zero exit code will halt the pipeline immediately!
+                    pytest -v tests/test_ui.py --junitxml=reports/selenium-results.xml
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'reports/selenium-results.xml'
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/screenshots/*.png'
+                }
+                failure {
+                    echo "⚠️ Continuous Testing FAILED! Failure screenshots and logs preserved in build artifacts."
+                    echo "Halting pipeline: deployment stage skipped due to test regression."
                 }
             }
         }
@@ -99,14 +128,13 @@ pipeline {
         stage('Package') {
             steps {
                 echo "=========================================================="
-                echo "Stage 4: Packaging Application Release Artifact"
+                echo "Stage 5: Packaging Verified Release Artifact"
                 echo "=========================================================="
                 sh '''
                     mkdir -p dist reports
 
                     PACKAGE_NAME="${APP_NAME}-${params.ENVIRONMENT}-b${BUILD_NUMBER}-${BUILD_TIMESTAMP}.tar.gz"
 
-                    # Generate release manifest
                     cat <<EOF > dist/build-manifest.json
 {
   "application": "${APP_NAME}",
@@ -119,7 +147,6 @@ pipeline {
 }
 EOF
 
-                    # Bundle application code, templates, and dependencies
                     tar --exclude='.git' \
                         --exclude='${VENV_DIR}' \
                         --exclude='__pycache__' \
@@ -138,32 +165,27 @@ EOF
         stage('Deploy') {
             steps {
                 echo "=========================================================="
-                echo "Stage 5: Deploying Application to ${params.ENVIRONMENT} Target"
+                echo "Stage 6: Deploying Verified Build to ${params.ENVIRONMENT}"
                 echo "=========================================================="
                 sh '''
                     . ${VENV_DIR}/bin/activate || . ${VENV_DIR}/Scripts/activate
 
-                    # Gracefully stop any previous instance running on target port
-                    echo "Checking for active processes on port ${PORT}..."
+                    echo "Terminating existing process on port ${PORT}..."
                     PID=$(lsof -ti:${PORT} || netstat -tlpn 2>/dev/null | grep ":${PORT} " | awk '{print $7}' | cut -d'/' -f1 || true)
                     if [ -n "$PID" ]; then
-                        echo "Terminating existing process (PID: $PID) on port ${PORT}..."
                         kill -15 $PID 2>/dev/null || kill -9 $PID 2>/dev/null || true
                         sleep 2
                     fi
 
-                    # Start application server in background with target PORT and ENVIRONMENT
-                    echo "Starting Flask Application on port ${PORT} (${ENVIRONMENT})..."
+                    echo "Launching Flask Application on port ${PORT} (${ENVIRONMENT})..."
                     export FLASK_ENV=${ENVIRONMENT}
                     export PORT=${PORT}
 
-                    # Launch with nohup or background process
                     nohup python app.py > "app-${ENVIRONMENT}.log" 2>&1 &
                     APP_PID=$!
-                    echo "Application launched with PID: ${APP_PID}"
+                    echo "Application started with PID: ${APP_PID}"
 
-                    # Health check verification loop (max 15 seconds)
-                    echo "Awaiting application startup readiness..."
+                    echo "Awaiting application readiness..."
                     HEALTHY=0
                     for i in $(seq 1 10); do
                         sleep 1
@@ -198,14 +220,14 @@ EOF
 
     post {
         always {
-            echo "Pipeline run completed. Cleaning temporary workspace caches..."
+            echo "Pipeline finished. Cleaning temporary caches..."
             cleanWs deleteDirs: false, notFailBuild: true
         }
         success {
-            echo "✅ Build #${BUILD_NUMBER} finished with SUCCESS status."
+            echo "✅ Pipeline Build #${BUILD_NUMBER} completed with all quality gates passed."
         }
         failure {
-            echo "❌ Build #${BUILD_NUMBER} FAILED. Inspect console output and logs for details."
+            echo "❌ Pipeline Build #${BUILD_NUMBER} failed quality gates. Deployment halted."
         }
     }
 }
