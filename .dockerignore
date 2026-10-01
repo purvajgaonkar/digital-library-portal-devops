@@ -1,0 +1,36 @@
+# VCS & Git
+.git/
+.gitignore
+
+# Python compilation & environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Testing & CI artifacts
+tests/
+reports/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation & GitHub config
+docs/
+.github/
+README.md
+Jenkinsfile
+
+# Local databases (re-initialized or volume-mounted)
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+dist/
