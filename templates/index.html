@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Library Search Portal | CI/CD Baseline</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen antialiased flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                        Digital Library Portal
+                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">DevOps Phase 1</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">CI/CD Automated Academic Resource Gateway</p>
+                </div>
+            </div>
+
+            <!-- Health Status & Actions -->
+            <div class="flex items-center space-x-3">
+                <div id="healthBadge" class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="healthText">Service Health: UP</span>
+                </div>
+                <button onclick="openAddModal()" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Add Book
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Summary Dashboard Metric Cards -->
+        <section aria-label="Dashboard Metrics">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Total Books -->
+                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Books</p>
+                            <h3 id="statTotal" class="text-3xl font-extrabold text-white mt-1">--</h3>
+                        </div>
+                        <div class="p-3 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-slate-400 flex items-center gap-1">
+                        <span>Database Catalog Inventory</span>
+                    </div>
+                </div>
+
+                <!-- Available Books -->
+                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Available</p>
+                            <h3 id="statAvailable" class="text-3xl font-extrabold text-emerald-400 mt-1">--</h3>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-slate-400">Ready for instant loan</div>
+                </div>
+
+                <!-- Checked Out -->
+                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-amber-400">Checked Out</p>
+                            <h3 id="statCheckedOut" class="text-3xl font-extrabold text-amber-400 mt-1">--</h3>
+                        </div>
+                        <div class="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-slate-400">Currently in circulation</div>
+                </div>
+
+                <!-- Categories -->
+                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Genres & Topics</p>
+                            <h3 id="statCategories" class="text-3xl font-extrabold text-indigo-300 mt-1">--</h3>
+                        </div>
+                        <div class="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-slate-400">Distinct subject categories</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Filter Controls -->
+        <section class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-5 shadow-sm space-y-4">
+            <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+                <!-- Search Input -->
+                <div class="relative w-full md:w-96">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Search by title, author, ISBN, or topic..."
+                           class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                </div>
+
+                <!-- Status Filter & Clear -->
+                <div class="flex w-full md:w-auto items-center gap-3">
+                    <select id="statusFilter" class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="All">All Statuses</option>
+                        <option value="Available">Available</option>
+                        <option value="Checked Out">Checked Out</option>
+                        <option value="Reserved">Reserved</option>
+                    </select>
+
+                    <button id="clearBtn" onclick="clearFilters()" class="px-3 py-2.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 text-sm font-medium transition">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Catalog Table Card -->
+        <section class="bg-slate-800/70 border border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
+            <div class="p-5 border-b border-slate-700/80 flex justify-between items-center">
+                <div>
+                    <h2 class="text-base font-bold text-white">Catalog Resources</h2>
+                    <p class="text-xs text-slate-400" id="resultCount">Loading catalog records...</p>
+                </div>
+                <button onclick="loadBooks(); loadStats();" class="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-900/60 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700">
+                        <tr>
+                            <th class="py-3.5 px-4 w-12">#</th>
+                            <th class="py-3.5 px-4">Title & ISBN</th>
+                            <th class="py-3.5 px-4">Author</th>
+                            <th class="py-3.5 px-4">Category</th>
+                            <th class="py-3.5 px-4">Status</th>
+                            <th class="py-3.5 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booksTableBody" class="divide-y divide-slate-700/60">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden py-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-semibold text-slate-300">No matching books found</h3>
+                <p class="mt-1 text-xs text-slate-500">Try adjusting your search keyword or clearing the status filter.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add Book Modal -->
+    <div id="addModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-base font-bold text-white">Register New Book Resource</h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form id="addBookForm" onsubmit="submitNewBook(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Book Title *</label>
+                    <input type="text" id="modalTitle" required placeholder="e.g. Site Reliability Engineering"
+                           class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Author(s) *</label>
+                        <input type="text" id="modalAuthor" required placeholder="e.g. Betsy Beyer"
+                               class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">ISBN Code *</label>
+                        <input type="text" id="modalIsbn" required placeholder="e.g. 978-0134494166"
+                               class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Category / Domain</label>
+                        <input type="text" id="modalCategory" placeholder="e.g. DevOps, Cloud, AI"
+                               class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Initial Status</label>
+                        <select id="modalStatus" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="Available">Available</option>
+                            <option value="Checked Out">Checked Out</option>
+                            <option value="Reserved">Reserved</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="modalError" class="hidden text-xs text-rose-400 bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20"></div>
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="modalSubmitBtn" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold transition">
+                        Save to Catalog
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 text-sm">
+        <span id="toastIcon"></span>
+        <span id="toastMessage" class="font-medium"></span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        <p>CI/CD Digital Library Search Portal &bull; DevOps Lab Mini-Project (Phase 1)</p>
+    </footer>
+
+    <!-- Client-side Logic -->
+    <script>
+        // Real-time Health Check
+        async function checkHealth() {
+            try {
+                const res = await fetch('/health');
+                const data = await res.json();
+                if (data.status === 'UP') {
+                    document.getElementById('healthBadge').classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Health check failed:", err);
+            }
+        }
+
+        // Load Summary Dashboard Metrics
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/dashboard/stats');
+                if (!res.ok) throw new Error('Failed to load stats');
+                const stats = await res.json();
+                document.getElementById('statTotal').innerText = stats.total;
+                document.getElementById('statAvailable').innerText = stats.available;
+                document.getElementById('statCheckedOut').innerText = stats.checked_out;
+                document.getElementById('statCategories').innerText = stats.categories;
+            } catch (err) {
+                console.error("Stats error:", err);
+            }
+        }
+
+        // Status Badge Helper
+        function getStatusBadge(status, id) {
+            let colorClasses = "";
+            if (status === 'Available') {
+                colorClasses = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+            } else if (status === 'Checked Out') {
+                colorClasses = "bg-amber-500/10 text-amber-400 border-amber-500/30";
+            } else {
+                colorClasses = "bg-indigo-500/10 text-indigo-400 border-indigo-500/30";
+            }
+
+            return `
+                <select onchange="updateStatus(${id}, this.value)" class="text-xs px-2.5 py-1 rounded-full border font-semibold bg-slate-900 ${colorClasses} focus:outline-none cursor-pointer">
+                    <option value="Available" ${status === 'Available' ? 'selected' : ''}>Available</option>
+                    <option value="Checked Out" ${status === 'Checked Out' ? 'selected' : ''}>Checked Out</option>
+                    <option value="Reserved" ${status === 'Reserved' ? 'selected' : ''}>Reserved</option>
+                </select>
+            `;
+        }
+
+        // Fetch and Render Books
+        async function loadBooks() {
+            const query = document.getElementById('searchInput').value;
+            const status = document.getElementById('statusFilter').value;
+            const url = new URL('/api/books', window.location.origin);
+            if (query) url.searchParams.append('q', query);
+            if (status && status !== 'All') url.searchParams.append('status', status);
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const tbody = document.getElementById('booksTableBody');
+                const emptyState = document.getElementById('emptyState');
+                tbody.innerHTML = '';
+
+                document.getElementById('resultCount').innerText = `Showing ${data.count} catalog entries`;
+
+                if (data.count === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                } else {
+                    emptyState.classList.add('hidden');
+                }
+
+                data.books.forEach((book) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-800/40 transition border-b border-slate-800";
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-4 font-mono text-xs text-slate-500">${book.id}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-semibold text-white">${escapeHtml(book.title)}</div>
+                            <div class="text-xs font-mono text-slate-400">ISBN: ${escapeHtml(book.isbn)}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-300">${escapeHtml(book.author)}</td>
+                        <td class="py-3.5 px-4">
+                            <span class="text-xs px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 font-medium">
+                                ${escapeHtml(book.category)}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            ${getStatusBadge(book.status, book.id)}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <button onclick="deleteBook(${book.id})" class="text-rose-400 hover:text-rose-300 text-xs font-medium px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition">
+                                Delete
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Load books error:", err);
+            }
+        }
+
+        // Update Book Status
+        async function updateStatus(id, newStatus) {
+            try {
+                const res = await fetch(`/api/books/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error('Status update failed');
+                showToast(`Book #${id} updated to ${newStatus}`, 'success');
+                loadStats();
+                loadBooks();
+            } catch (err) {
+                showToast('Failed to update status', 'error');
+            }
+        }
+
+        // Delete Book
+        async function deleteBook(id) {
+            if (!confirm(`Are you sure you want to remove Book #${id} from the catalog?`)) return;
+            try {
+                const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Delete failed');
+                showToast(`Book #${id} deleted from catalog`, 'success');
+                loadStats();
+                loadBooks();
+            } catch (err) {
+                showToast('Could not delete book', 'error');
+            }
+        }
+
+        // Add Book Form Handler
+        async function submitNewBook(e) {
+            e.preventDefault();
+            const errorDiv = document.getElementById('modalError');
+            errorDiv.classList.add('hidden');
+
+            const payload = {
+                title: document.getElementById('modalTitle').value,
+                author: document.getElementById('modalAuthor').value,
+                isbn: document.getElementById('modalIsbn').value,
+                category: document.getElementById('modalCategory').value,
+                status: document.getElementById('modalStatus').value
+            };
+
+            try {
+                const res = await fetch('/api/books', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errorDiv.innerText = data.error || 'Failed to add book';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                showToast('New book successfully registered', 'success');
+                closeAddModal();
+                document.getElementById('addBookForm').reset();
+                loadStats();
+                loadBooks();
+            } catch (err) {
+                errorDiv.innerText = 'Network or server error';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        // Modal Controls
+        function openAddModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+            document.getElementById('modalTitle').focus();
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+            document.getElementById('modalError').classList.add('hidden');
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = 'All';
+            loadBooks();
+        }
+
+        // Utility: HTML escape
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        // Toast Notification System
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMessage');
+
+            msgEl.innerText = msg;
+            if (type === 'success') {
+                toast.className = "fixed bottom-5 right-5 z-50 transform translate-y-0 opacity-100 transition-all duration-300 max-w-sm px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 text-sm bg-emerald-950 border border-emerald-600 text-emerald-100";
+                icon.innerHTML = '<span class="text-emerald-400 font-bold">✓</span>';
+            } else {
+                toast.className = "fixed bottom-5 right-5 z-50 transform translate-y-0 opacity-100 transition-all duration-300 max-w-sm px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 text-sm bg-rose-950 border border-rose-600 text-rose-100";
+                icon.innerHTML = '<span class="text-rose-400 font-bold">✕</span>';
+            }
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Event Listeners for live filtering
+        let debounceTimer;
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(loadBooks, 250);
+        });
+        document.getElementById('statusFilter').addEventListener('change', loadBooks);
+
+        // Initial Boot
+        window.addEventListener('DOMContentLoaded', () => {
+            checkHealth();
+            loadStats();
+            loadBooks();
+        });
+    </script>
+</body>
+</html>
