@@ -1,5 +1,11 @@
-import sqlite3
+"""Digital Library Search Portal - Application Backend
+Phase 2: Feature Development (feature/add-record)
+Enterprise-grade CRUD implementation with rigorous input validation and error handling.
+"""
+
 import os
+import re
+import sqlite3
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
@@ -7,14 +13,14 @@ DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'library.db')
 
 
 def get_db_connection():
-    """Establish and return a connection to the SQLite database with dictionary-like row access."""
+    """Establish and return an active SQLite connection configured with row access by column name."""
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_db():
-    """Initialize the SQLite database schema and seed initial catalog records if empty."""
+    """Initialize database tables with constraints and default values."""
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -29,11 +35,10 @@ def init_db():
         );
     ''')
 
-    # Seed baseline records if database is fresh
+    # Seed initial digital catalog items if table is brand new
     cursor.execute("SELECT COUNT(*) AS count FROM books")
-    row = cursor.fetchone()
-    if row['count'] == 0:
-        seed_data = [
+    if cursor.fetchone()['count'] == 0:
+        seed_records = [
             ("The DevOps Handbook", "Gene Kim, Jez Humble, Patrick Debois", "978-1942788002", "DevOps", "Available"),
             ("Clean Code: A Handbook of Agile Software Craftsmanship", "Robert C. Martin", "978-0132350884", "Software Engineering", "Checked Out"),
             ("Continuous Delivery: Reliable Software Releases", "Jez Humble, David Farley", "978-0321601919", "DevOps", "Available"),
@@ -43,14 +48,22 @@ def init_db():
         cursor.executemany('''
             INSERT INTO books (title, author, isbn, category, status)
             VALUES (?, ?, ?, ?, ?)
-        ''', seed_data)
+        ''', seed_records)
         conn.commit()
 
     conn.close()
 
 
-# Initialize database at startup
 init_db()
+
+
+# --------------------------------------------------------------------------
+# Validation Helpers
+# --------------------------------------------------------------------------
+def validate_isbn(isbn_str):
+    """Validate standard ISBN format (simple 10 or 13 digits with optional hyphens)."""
+    cleaned = re.sub(r'[-\s]', '', isbn_str)
+    return len(cleaned) in (10, 13) and cleaned.isalnum()
 
 
 # --------------------------------------------------------------------------
@@ -58,20 +71,20 @@ init_db()
 # --------------------------------------------------------------------------
 @app.route('/')
 def index():
-    """Render the primary library portal dashboard and catalog user interface."""
+    """Serve the primary Digital Library user interface."""
     return render_template('index.html')
 
 
 @app.route('/health')
 def health():
-    """Application health and readiness probe for CI/CD and monitoring."""
+    """DevOps health and readiness probe endpoint."""
     try:
         conn = get_db_connection()
         conn.execute("SELECT 1")
         conn.close()
-        return jsonify({"status": "UP", "database": "connected"}), 200
-    except Exception as e:
-        return jsonify({"status": "DOWN", "error": str(e)}), 500
+        return jsonify({"status": "UP", "database": "connected", "version": "1.0-MVP"}), 200
+    except Exception as exc:
+        return jsonify({"status": "DOWN", "error": str(exc)}), 500
 
 
 # --------------------------------------------------------------------------
@@ -79,7 +92,7 @@ def health():
 # --------------------------------------------------------------------------
 @app.route('/api/dashboard/stats', methods=['GET'])
 def get_dashboard_stats():
-    """Return aggregated metric cards data: total, available, checked out, reserved, categories."""
+    """Compute and return real-time catalog aggregates."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -101,63 +114,83 @@ def get_dashboard_stats():
 
 @app.route('/api/books', methods=['GET'])
 def list_books():
-    """List all books with optional search filter query params (q, status, category)."""
+    """Retrieve catalog items with optional keyword and status query filtering."""
     search_query = request.args.get('q', '').strip()
     status_filter = request.args.get('status', '').strip()
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    sql = "SELECT * FROM books WHERE 1=1"
+    query = "SELECT * FROM books WHERE 1=1"
     params = []
 
     if search_query:
-        sql += " AND (title LIKE ? OR author LIKE ? OR isbn LIKE ? OR category LIKE ?)"
-        wildcard = f"%{search_query}%"
-        params.extend([wildcard, wildcard, wildcard, wildcard])
+        query += " AND (title LIKE ? OR author LIKE ? OR isbn LIKE ? OR category LIKE ?)"
+        term = f"%{search_query}%"
+        params.extend([term, term, term, term])
 
     if status_filter and status_filter != 'All':
-        sql += " AND status = ?"
+        query += " AND status = ?"
         params.append(status_filter)
 
-    sql += " ORDER BY id DESC"
-    cursor.execute(sql, params)
+    query += " ORDER BY id DESC"
+    cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
 
-    books = [dict(row) for row in rows]
-    return jsonify({"count": len(books), "books": books}), 200
+    return jsonify({"count": len(rows), "books": [dict(r) for r in rows]}), 200
 
 
 @app.route('/api/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
-    """Retrieve metadata for an individual book by ID."""
+    """Retrieve detailed metadata for an individual catalog record."""
     conn = get_db_connection()
-    row = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
+    book = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
     conn.close()
 
-    if row is None:
-        return jsonify({"error": "Book not found"}), 404
-    return jsonify({"book": dict(row)}), 200
+    if not book:
+        return jsonify({"error": f"Book record #{book_id} not found"}), 404
+    return jsonify({"book": dict(book)}), 200
 
 
 @app.route('/api/books', methods=['POST'])
 def create_book():
-    """Create a new book entry in the library catalog."""
-    data = request.get_json() or request.form
+    """
+    Deliverable 5: Create Record Workflow.
+    Validates mandatory inputs, format integrity, and uniqueness before inserting into SQLite.
+    """
+    payload = request.get_json() or request.form
 
-    title = data.get('title', '').strip()
-    author = data.get('author', '').strip()
-    isbn = data.get('isbn', '').strip()
-    category = data.get('category', 'General').strip() or 'General'
-    status = data.get('status', 'Available').strip() or 'Available'
+    title = str(payload.get('title', '')).strip()
+    author = str(payload.get('author', '')).strip()
+    isbn = str(payload.get('isbn', '')).strip()
+    category = str(payload.get('category', 'General')).strip() or 'General'
+    status = str(payload.get('status', 'Available')).strip() or 'Available'
 
-    if not title or not author or not isbn:
-        return jsonify({"error": "Title, Author, and ISBN are required fields"}), 400
+    # 1. Validation: Mandatory fields
+    if not title:
+        return jsonify({"error": "Validation failed: 'title' is required"}), 400
+    if not author:
+        return jsonify({"error": "Validation failed: 'author' is required"}), 400
+    if not isbn:
+        return jsonify({"error": "Validation failed: 'isbn' is required"}), 400
 
-    if status not in ['Available', 'Checked Out', 'Reserved']:
-        return jsonify({"error": "Status must be one of: Available, Checked Out, Reserved"}), 400
+    # 2. Validation: Length constraints
+    if len(title) > 200:
+        return jsonify({"error": "Title exceeds maximum allowed length of 200 characters"}), 400
+    if len(author) > 150:
+        return jsonify({"error": "Author exceeds maximum allowed length of 150 characters"}), 400
 
+    # 3. Validation: ISBN format
+    if not validate_isbn(isbn):
+        return jsonify({"error": f"Invalid ISBN format '{isbn}'. Must be a 10 or 13-digit code."}), 400
+
+    # 4. Validation: Status enum
+    valid_statuses = ('Available', 'Checked Out', 'Reserved')
+    if status not in valid_statuses:
+        return jsonify({"error": f"Invalid status '{status}'. Must be one of {valid_statuses}"}), 400
+
+    # 5. Database transaction with uniqueness check
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -166,20 +199,31 @@ def create_book():
             VALUES (?, ?, ?, ?, ?)
         ''', (title, author, isbn, category, status))
         conn.commit()
-        new_id = cursor.lastrowid
+        created_id = cursor.lastrowid
         conn.close()
-        return jsonify({"message": "Book registered successfully", "id": new_id}), 201
+        return jsonify({
+            "message": "Resource successfully registered in library catalog",
+            "id": created_id,
+            "book": {
+                "id": created_id,
+                "title": title,
+                "author": author,
+                "isbn": isbn,
+                "category": category,
+                "status": status
+            }
+        }), 201
     except sqlite3.IntegrityError:
         conn.close()
-        return jsonify({"error": f"A book with ISBN '{isbn}' already exists"}), 409
-    except Exception as e:
+        return jsonify({"error": f"Duplicate ISBN: A book with code '{isbn}' already exists in catalog."}), 409
+    except Exception as exc:
         conn.close()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Internal server error: {str(exc)}"}), 500
 
 
 @app.route('/api/books/<int:book_id>', methods=['PUT'])
 def update_book(book_id):
-    """Update status or metadata of an existing book."""
+    """Update status or attributes of a catalog record."""
     data = request.get_json() or request.form
     if not data:
         return jsonify({"error": "No update payload provided"}), 400
@@ -188,18 +232,18 @@ def update_book(book_id):
     cursor = conn.cursor()
 
     existing = cursor.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
-    if existing is None:
+    if not existing:
         conn.close()
-        return jsonify({"error": "Book not found"}), 404
+        return jsonify({"error": f"Book #{book_id} not found"}), 404
 
-    title = data.get('title', existing['title'])
-    author = data.get('author', existing['author'])
-    category = data.get('category', existing['category'])
-    status = data.get('status', existing['status'])
+    title = data.get('title', existing['title']).strip()
+    author = data.get('author', existing['author']).strip()
+    category = data.get('category', existing['category']).strip()
+    status = data.get('status', existing['status']).strip()
 
-    if status not in ['Available', 'Checked Out', 'Reserved']:
+    if status not in ('Available', 'Checked Out', 'Reserved'):
         conn.close()
-        return jsonify({"error": "Status must be one of: Available, Checked Out, Reserved"}), 400
+        return jsonify({"error": "Invalid status value"}), 400
 
     cursor.execute('''
         UPDATE books
@@ -209,25 +253,23 @@ def update_book(book_id):
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Book record updated successfully"}), 200
+    return jsonify({"message": f"Book #{book_id} updated successfully"}), 200
 
 
 @app.route('/api/books/<int:book_id>', methods=['DELETE'])
 def delete_book(book_id):
-    """Delete a book record from the catalog."""
+    """Remove a book from the catalog."""
     conn = get_db_connection()
     cursor = conn.cursor()
-
     cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
     deleted = cursor.rowcount
     conn.commit()
     conn.close()
 
     if deleted == 0:
-        return jsonify({"error": "Book not found"}), 404
-    return jsonify({"message": "Book removed from catalog"}), 200
+        return jsonify({"error": f"Book #{book_id} not found"}), 404
+    return jsonify({"message": f"Book #{book_id} deleted successfully"}), 200
 
 
 if __name__ == '__main__':
-    # Local baseline execution
     app.run(host='0.0.0.0', port=5000, debug=True)
