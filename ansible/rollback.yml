@@ -1,0 +1,65 @@
+---
+# ==============================================================================
+# Ansible Playbook: Digital Library Search Portal - Standalone Rollback
+# Rapid Recovery to Known Stable Release Baseline
+# ==============================================================================
+
+- name: Emergency Rollback to Known Stable Release
+  hosts: library_servers
+  become: true
+  gather_facts: false
+
+  vars:
+    app_name: "digital-library-portal"
+    app_port: "{{ app_port | default(5000) }}"
+    docker_image_repo: "{{ docker_image_repo | default('devopslab/digital-library-portal') }}"
+    target_version: "{{ target_version | default('v1.0-MVP') }}"
+    data_dir: "/opt/{{ app_name }}/data"
+    container_name: "{{ app_name }}-{{ environment_type | default('production') }}"
+
+  tasks:
+    - name: Announce Rollback Procedure
+      ansible.builtin.debug:
+        msg: "Initiating controlled rollback of {{ container_name }} to target version: {{ target_version }}"
+
+    - name: Ensure target release Docker image is present locally
+      community.docker.docker_image:
+        name: "{{ docker_image_repo }}:{{ target_version }}"
+        source: pull
+        state: present
+
+    - name: Recreate container running verified rollback release
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ docker_image_repo }}:{{ target_version }}"
+        state: started
+        restart_policy: unless-stopped
+        recreate: true
+        ports:
+          - "{{ app_port }}:5000"
+        volumes:
+          - "{{ data_dir }}:/app/data"
+        env:
+          PORT: "5000"
+          FLASK_ENV: "{{ environment_type | default('production') }}"
+
+    - name: Verify application recovery via HTTP health probe
+      ansible.builtin.uri:
+        url: "http://{{ '127.0.0.1' if ansible_host in ['localhost', '127.0.0.1'] else ansible_host }}:{{ app_port }}/health"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: rollback_health
+      until: rollback_health.status == 200
+      retries: 8
+      delay: 2
+
+    - name: Report rollback success
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - "✅ ROLLBACK COMPLETED SUCCESSFULLY!"
+          - "Restored Version : {{ target_version }}"
+          - "Container Status : Up and Healthy"
+          - "Service Endpoint : http://{{ ansible_host }}:{{ app_port }}"
+          - "=========================================================="

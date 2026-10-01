@@ -1,0 +1,189 @@
+---
+# ==============================================================================
+# Ansible Playbook: Digital Library Search Portal - Provisioning & Continuous Deployment
+# Idempotent Server Provisioning, Container Deployment, Health Validation & Rollback
+# ==============================================================================
+
+- name: Provision Prerequisites, Deploy Container, and Validate Reliability
+  hosts: library_servers
+  become: true
+  gather_facts: true
+
+  vars:
+    app_name: "digital-library-portal"
+    app_port: "{{ app_port | default(5000) }}"
+    docker_image_repo: "{{ docker_image_repo | default('devopslab/digital-library-portal') }}"
+    app_version: "{{ app_version | default('v1.0-MVP') }}"
+    previous_app_version: "{{ previous_app_version | default('v1.0-MVP') }}"
+    app_user: "devops"
+    app_group: "devops"
+    base_install_dir: "/opt/{{ app_name }}"
+    data_dir: "{{ base_install_dir }}/data"
+    logs_dir: "{{ base_install_dir }}/logs"
+    backups_dir: "{{ base_install_dir }}/backups"
+    container_name: "{{ app_name }}-{{ environment_type | default('production') }}"
+
+  tasks:
+
+    # --------------------------------------------------------------------------
+    # 1. Server Prerequisites: Packages & Dependencies
+    # --------------------------------------------------------------------------
+    - name: Ensure APT cache is up to date (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install essential OS packages and Docker dependencies
+      ansible.builtin.package:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - python3
+          - python3-pip
+          - docker.io
+        state: present
+
+    - name: Install Python Docker SDK for Ansible container management
+      ansible.builtin.pip:
+        name:
+          - docker>=6.0.0
+          - requests
+        state: present
+        executable: pip3
+
+    # --------------------------------------------------------------------------
+    # 2. System Services & User Configuration
+    # --------------------------------------------------------------------------
+    - name: Ensure Docker service is enabled and actively running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Ensure application group exists
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Ensure service user exists and belongs to docker group
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        state: present
+
+    # --------------------------------------------------------------------------
+    # 3. Directory Structure & Permissions
+    # --------------------------------------------------------------------------
+    - name: Create required directory hierarchy for persistence and logs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+      loop:
+        - "{{ base_install_dir }}"
+        - "{{ data_dir }}"
+        - "{{ logs_dir }}"
+        - "{{ backups_dir }}"
+
+    # --------------------------------------------------------------------------
+    # 4. Idempotent Container Deployment & Verification Block
+    # --------------------------------------------------------------------------
+    - name: Deploy application container with automated rollback on failure
+      block:
+        - name: Pull specified version of application Docker image
+          community.docker.docker_image:
+            name: "{{ docker_image_repo }}:{{ app_version }}"
+            source: pull
+            state: present
+
+        - name: Run Digital Library Search Portal container
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ docker_image_repo }}:{{ app_version }}"
+            state: started
+            restart_policy: unless-stopped
+            recreate: false  # Idempotent: only recreates if config or image changed
+            ports:
+              - "{{ app_port }}:5000"
+            volumes:
+              - "{{ data_dir }}:/app/data"
+              - "{{ logs_dir }}:/app/logs"
+            env:
+              PORT: "5000"
+              FLASK_ENV: "{{ environment_type | default('production') }}"
+
+        # ----------------------------------------------------------------------
+        # 5. Automated Health Check & Readiness Validation
+        # ----------------------------------------------------------------------
+        - name: Validate application readiness via HTTP health check probe
+          ansible.builtin.uri:
+            url: "http://{{ '127.0.0.1' if ansible_host in ['localhost', '127.0.0.1'] else ansible_host }}:{{ app_port }}/health"
+            method: GET
+            status_code: 200
+            return_content: true
+          register: health_response
+          until: health_response.status == 200
+          retries: 10
+          delay: 2
+
+        - name: Assert health check payload integrity
+          ansible.builtin.assert:
+            that:
+              - health_response.json.status == "UP"
+              - health_response.json.database == "connected"
+            fail_msg: "Health check probe returned unexpected status payload: {{ health_response.content }}"
+            success_msg: "Health check confirmed: Service is UP with database connected."
+
+        - name: Display successful deployment summary
+          ansible.builtin.debug:
+            msg:
+              - "=========================================================="
+              - "🎉 DEPLOYMENT SUCCESSFUL & VALIDATED!"
+              - "Container Name : {{ container_name }}"
+              - "Deployed Version: {{ app_version }}"
+              - "Service Endpoint: http://{{ ansible_host }}:{{ app_port }}"
+              - "Health Probe    : http://{{ ansible_host }}:{{ app_port }}/health"
+              - "=========================================================="
+
+      # ------------------------------------------------------------------------
+      # 6. Automated Rollback & Recovery Rescue Block
+      # ------------------------------------------------------------------------
+      rescue:
+        - name: ⚠️ DEPLOYMENT FAILED - Initiating automated rollback
+          ansible.builtin.debug:
+            msg: "Deployment of {{ app_version }} failed health checks. Rolling back to stable release {{ previous_app_version }}..."
+
+        - name: Roll back container to previous stable release
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ docker_image_repo }}:{{ previous_app_version }}"
+            state: started
+            restart_policy: unless-stopped
+            recreate: true
+            ports:
+              - "{{ app_port }}:5000"
+            volumes:
+              - "{{ data_dir }}:/app/data"
+            env:
+              PORT: "5000"
+              FLASK_ENV: "{{ environment_type | default('production') }}"
+
+        - name: Verify recovery of rolled-back container
+          ansible.builtin.uri:
+            url: "http://{{ '127.0.0.1' if ansible_host in ['localhost', '127.0.0.1'] else ansible_host }}:{{ app_port }}/health"
+            status_code: 200
+          register: rollback_health
+          until: rollback_health.status == 200
+          retries: 5
+          delay: 2
+
+        - name: Fail the playbook after rollback to alert CI/CD pipeline
+          ansible.builtin.fail:
+            msg: "CRITICAL: Deployed version {{ app_version }} failed health checks. System successfully restored to {{ previous_app_version }}."
