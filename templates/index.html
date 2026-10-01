@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Library Search Portal | CI/CD Pipeline</title>
+    <title>Digital Library Search Portal | MVP Release</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,7 +38,7 @@
                 <div>
                     <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
                         Digital Library Portal
-                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-500/10 text-red-400 border border-red-500/20">HOTFIX: Staging v0.9.8</span>
+                        <span id="versionBadge" class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">v1.0-MVP Release</span>
                     </h1>
                     <p class="text-xs text-slate-400">CI/CD Automated Academic Resource Gateway</p>
                 </div>
@@ -48,7 +48,7 @@
             <div class="flex items-center space-x-3">
                 <div id="healthBadge" class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span id="healthText">Service Health: UP</span>
+                    <span id="healthText">Service: UP</span>
                 </div>
                 <button onclick="openAddModal()" id="btnOpenAddModal" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,102 +60,99 @@
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Content -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        <!-- Summary Dashboard Metric Cards -->
+        <!-- Summary Dashboard Metric Cards (MVP Telemetry) -->
         <section aria-label="Dashboard Metrics">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <!-- Total Books -->
-                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Books</p>
-                            <h3 id="statTotal" class="text-3xl font-extrabold text-white mt-1">--</h3>
-                        </div>
-                        <div class="p-3 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-xs text-slate-400">Database Catalog Inventory</div>
+                <div class="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Books</p>
+                    <h3 id="statTotal" class="text-2xl font-extrabold text-white mt-1">--</h3>
+                    <div class="mt-1 text-[11px] text-slate-400">In database</div>
                 </div>
 
                 <!-- Available Books -->
-                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Available</p>
-                            <h3 id="statAvailable" class="text-3xl font-extrabold text-emerald-400 mt-1">--</h3>
-                        </div>
-                        <div class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-xs text-slate-400">Ready for instant loan</div>
+                <div class="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">Available</p>
+                    <h3 id="statAvailable" class="text-2xl font-extrabold text-emerald-400 mt-1">--</h3>
+                    <div class="mt-1 text-[11px] text-slate-400">Ready to issue</div>
                 </div>
 
                 <!-- Checked Out -->
-                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-wider text-amber-400">Checked Out</p>
-                            <h3 id="statCheckedOut" class="text-3xl font-extrabold text-amber-400 mt-1">--</h3>
-                        </div>
-                        <div class="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-xs text-slate-400">Currently in circulation</div>
+                <div class="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-amber-400">Checked Out</p>
+                    <h3 id="statCheckedOut" class="text-2xl font-extrabold text-amber-400 mt-1">--</h3>
+                    <div class="mt-1 text-[11px] text-slate-400">On active loan</div>
+                </div>
+
+                <!-- Reserved -->
+                <div class="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">Reserved</p>
+                    <h3 id="statReserved" class="text-2xl font-extrabold text-indigo-400 mt-1">--</h3>
+                    <div class="mt-1 text-[11px] text-slate-400">Held for pickup</div>
                 </div>
 
                 <!-- Categories -->
-                <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm relative overflow-hidden group">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Genres & Topics</p>
-                            <h3 id="statCategories" class="text-3xl font-extrabold text-indigo-300 mt-1">--</h3>
-                        </div>
-                        <div class="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-xs text-slate-400">Distinct subject categories</div>
+                <div class="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-purple-400">Categories</p>
+                    <h3 id="statCategories" class="text-2xl font-extrabold text-purple-300 mt-1">--</h3>
+                    <div class="mt-1 text-[11px] text-slate-400">Distinct genres</div>
+                </div>
+
+                <!-- Authors -->
+                <div class="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 shadow-sm">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-sky-400">Authors</p>
+                    <h3 id="statAuthors" class="text-2xl font-extrabold text-sky-300 mt-1">--</h3>
+                    <div class="mt-1 text-[11px] text-slate-400">Contributors</div>
                 </div>
             </div>
         </section>
 
-        <!-- Search & Filter Controls -->
+        <!-- Search & Dynamic Filter Controls -->
         <section class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-5 shadow-sm space-y-4">
-            <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
-                <!-- Search Input -->
-                <div class="relative w-full md:w-96">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <!-- Search Keyword -->
+                <div class="md:col-span-4 relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                     </div>
-                    <input type="text" id="searchInput" placeholder="Search by title, author, ISBN, or topic..."
-                           class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    <input type="text" id="searchInput" placeholder="Search title, author, ISBN, or topic..."
+                           class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition">
                 </div>
 
-                <!-- Status Filter & Clear -->
-                <div class="flex w-full md:w-auto items-center gap-3">
-                    <select id="statusFilter" class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <!-- Status Filter -->
+                <div class="md:col-span-3">
+                    <select id="statusFilter" class="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500">
                         <option value="All">All Statuses</option>
                         <option value="Available">Available</option>
                         <option value="Checked Out">Checked Out</option>
                         <option value="Reserved">Reserved</option>
                     </select>
+                </div>
 
-                    <button id="clearBtn" onclick="clearFilters()" class="px-3 py-2.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 text-sm font-medium transition">
+                <!-- Category Filter -->
+                <div class="md:col-span-2">
+                    <select id="categoryFilter" class="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="All">All Topics</option>
+                    </select>
+                </div>
+
+                <!-- Sort Filter -->
+                <div class="md:col-span-2">
+                    <select id="sortFilter" class="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="newest">Newest First</option>
+                        <option value="title_asc">Title (A-Z)</option>
+                        <option value="author_asc">Author (A-Z)</option>
+                    </select>
+                </div>
+
+                <!-- Reset Button -->
+                <div class="md:col-span-1 flex justify-end">
+                    <button onclick="clearFilters()" title="Reset Filters" class="w-full py-2.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 text-sm font-medium transition text-center">
                         Reset
                     </button>
                 </div>
@@ -164,29 +161,31 @@
 
         <!-- Catalog Table Card -->
         <section class="bg-slate-800/70 border border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
-            <div class="p-5 border-b border-slate-700/80 flex justify-between items-center">
+            <div class="p-5 border-b border-slate-700/80 flex justify-between items-center bg-slate-900/30">
                 <div>
                     <h2 class="text-base font-bold text-white">Catalog Resources</h2>
                     <p class="text-xs text-slate-400" id="resultCount">Loading catalog records...</p>
                 </div>
-                <button onclick="loadBooks(); loadStats();" class="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    Refresh
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="loadBooks(); loadStats(); loadCategories();" class="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             <!-- Table -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-900/60 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700">
+                    <thead class="bg-slate-900/80 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700">
                         <tr>
                             <th class="py-3.5 px-4 w-12">#</th>
                             <th class="py-3.5 px-4">Title & ISBN</th>
                             <th class="py-3.5 px-4">Author</th>
                             <th class="py-3.5 px-4">Category</th>
-                            <th class="py-3.5 px-4">Status</th>
+                            <th class="py-3.5 px-4">Status (Click to Change)</th>
                             <th class="py-3.5 px-4 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -197,17 +196,68 @@
             </div>
 
             <!-- Empty State -->
-            <div id="emptyState" class="hidden py-12 text-center">
+            <div id="emptyState" class="hidden py-14 text-center">
                 <svg class="mx-auto h-12 w-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
                 <h3 class="mt-2 text-sm font-semibold text-slate-300">No matching books found</h3>
-                <p class="mt-1 text-xs text-slate-500">Try adjusting your search keyword or clearing the status filter.</p>
+                <p class="mt-1 text-xs text-slate-500">Try adjusting your search keyword or clearing the filters.</p>
             </div>
         </section>
     </main>
 
-    <!-- Create Record Modal (Deliverable 5) -->
+    <!-- View Details Modal (MVP View Workflow) -->
+    <div id="viewModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <span class="text-sky-400">📖</span> Resource Details
+                </h3>
+                <button onclick="closeViewModal()" class="text-slate-400 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Publication Title</span>
+                    <h4 id="viewTitle" class="text-lg font-bold text-white mt-0.5"></h4>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Author</span>
+                        <p id="viewAuthor" class="text-sm font-medium text-slate-200 mt-0.5"></p>
+                    </div>
+                    <div>
+                        <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">ISBN Code</span>
+                        <p id="viewIsbn" class="text-sm font-mono font-medium text-sky-400 mt-0.5"></p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Category</span>
+                        <p id="viewCategory" class="text-sm font-medium text-slate-200 mt-0.5"></p>
+                    </div>
+                    <div>
+                        <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Current Status</span>
+                        <div id="viewStatusBadge" class="mt-0.5"></div>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Catalog Added Date</span>
+                    <p id="viewCreatedAt" class="text-xs font-mono text-slate-400 mt-0.5"></p>
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-slate-950/40 border-t border-slate-800 flex justify-end">
+                <button onclick="closeViewModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Record Modal (MVP Create Workflow) -->
     <div id="addModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
@@ -224,21 +274,19 @@
             <form id="addBookForm" onsubmit="submitNewBook(event)" class="p-6 space-y-4">
                 <div>
                     <label for="modalTitle" class="block text-xs font-semibold text-slate-300 mb-1">Book Title <span class="text-rose-400">*</span></label>
-                    <input type="text" id="modalTitle" required maxlength="200" placeholder="e.g. Site Reliability Engineering"
+                    <input type="text" id="modalTitle" required maxlength="200" placeholder="e.g. The Phoenix Project"
                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition">
-                    <p class="text-[11px] text-slate-500 mt-1">Full publication title (max 200 characters)</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="modalAuthor" class="block text-xs font-semibold text-slate-300 mb-1">Author(s) <span class="text-rose-400">*</span></label>
-                        <input type="text" id="modalAuthor" required maxlength="150" placeholder="e.g. Betsy Beyer"
+                        <input type="text" id="modalAuthor" required maxlength="150" placeholder="e.g. Gene Kim"
                                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition">
                     </div>
                     <div>
                         <label for="modalIsbn" class="block text-xs font-semibold text-slate-300 mb-1">ISBN Code <span class="text-rose-400">*</span></label>
-                        <input type="text" id="modalIsbn" required placeholder="e.g. 978-0134494166"
+                        <input type="text" id="modalIsbn" required placeholder="e.g. 978-0988262591"
                                class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono transition">
-                        <p class="text-[11px] text-slate-500 mt-1">Standard 10 or 13-digit code</p>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -261,7 +309,7 @@
                     <button type="button" onclick="closeAddModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition">
                         Cancel
                     </button>
-                    <button type="submit" id="modalSubmitBtn" class="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20 flex items-center gap-2">
+                    <button type="submit" id="modalSubmitBtn" class="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold transition shadow-md shadow-sky-500/20">
                         <span id="btnSubmitText">Save to Catalog</span>
                     </button>
                 </div>
@@ -277,11 +325,13 @@
 
     <!-- Footer -->
     <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-        <p>CI/CD Digital Library Search Portal &bull; DevOps Lab Mini-Project (Phase 2)</p>
+        <p>CI/CD Digital Library Search Portal &bull; DevOps Lab Mini-Project (MVP v1.0)</p>
     </footer>
 
-    <!-- Client-side Logic -->
+    <!-- Client-side Logic (Full MVP Feature Set) -->
     <script>
+        let currentBooksCache = [];
+
         async function checkHealth() {
             try {
                 const res = await fetch('/health');
@@ -290,7 +340,7 @@
                     document.getElementById('healthBadge').classList.remove('hidden');
                 }
             } catch (err) {
-                console.error("Health check error:", err);
+                console.error("Health probe failure:", err);
             }
         }
 
@@ -302,9 +352,30 @@
                 document.getElementById('statTotal').innerText = stats.total;
                 document.getElementById('statAvailable').innerText = stats.available;
                 document.getElementById('statCheckedOut').innerText = stats.checked_out;
+                document.getElementById('statReserved').innerText = stats.reserved;
                 document.getElementById('statCategories').innerText = stats.categories;
+                document.getElementById('statAuthors').innerText = stats.authors;
             } catch (err) {
                 console.error("Stats error:", err);
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                const data = await res.json();
+                const catSelect = document.getElementById('categoryFilter');
+                const currentVal = catSelect.value;
+                catSelect.innerHTML = '<option value="All">All Topics</option>';
+                data.categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.innerText = cat;
+                    if (cat === currentVal) opt.selected = true;
+                    catSelect.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Categories error:", err);
             }
         }
 
@@ -328,15 +399,21 @@
         }
 
         async function loadBooks() {
-            const query = document.getElementById('searchInput').value;
+            const query = document.getElementById('searchInput').value.trim();
             const status = document.getElementById('statusFilter').value;
+            const category = document.getElementById('categoryFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+
             const url = new URL('/api/books', window.location.origin);
             if (query) url.searchParams.append('q', query);
             if (status && status !== 'All') url.searchParams.append('status', status);
+            if (category && category !== 'All') url.searchParams.append('category', category);
+            if (sort) url.searchParams.append('sort', sort);
 
             try {
                 const res = await fetch(url);
                 const data = await res.json();
+                currentBooksCache = data.books;
                 const tbody = document.getElementById('booksTableBody');
                 const emptyState = document.getElementById('emptyState');
                 tbody.innerHTML = '';
@@ -356,7 +433,7 @@
                     tr.innerHTML = `
                         <td class="py-3.5 px-4 font-mono text-xs text-slate-500">${book.id}</td>
                         <td class="py-3.5 px-4">
-                            <div class="font-semibold text-white">${escapeHtml(book.title)}</div>
+                            <div class="font-semibold text-white hover:text-sky-400 cursor-pointer" onclick="viewBookDetails(${book.id})">${escapeHtml(book.title)}</div>
                             <div class="text-xs font-mono text-slate-400">ISBN: ${escapeHtml(book.isbn)}</div>
                         </td>
                         <td class="py-3.5 px-4 text-slate-300">${escapeHtml(book.author)}</td>
@@ -368,7 +445,10 @@
                         <td class="py-3.5 px-4">
                             ${getStatusBadge(book.status, book.id)}
                         </td>
-                        <td class="py-3.5 px-4 text-right">
+                        <td class="py-3.5 px-4 text-right space-x-2">
+                            <button onclick="viewBookDetails(${book.id})" class="text-sky-400 hover:text-sky-300 text-xs font-medium px-2 py-1 rounded bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 transition">
+                                View
+                            </button>
                             <button onclick="deleteBook(${book.id})" class="text-rose-400 hover:text-rose-300 text-xs font-medium px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition">
                                 Delete
                             </button>
@@ -381,6 +461,40 @@
             }
         }
 
+        // View Book Details Workflow
+        async function viewBookDetails(id) {
+            try {
+                const res = await fetch(`/api/books/${id}`);
+                if (!res.ok) throw new Error('Book not found');
+                const data = await res.json();
+                const book = data.book;
+
+                document.getElementById('viewTitle').innerText = book.title;
+                document.getElementById('viewAuthor').innerText = book.author;
+                document.getElementById('viewIsbn').innerText = book.isbn;
+                document.getElementById('viewCategory').innerText = book.category;
+                document.getElementById('viewCreatedAt').innerText = book.created_at || 'Recorded';
+
+                let badgeColor = book.status === 'Available' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                                 book.status === 'Checked Out' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                                 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+                document.getElementById('viewStatusBadge').innerHTML = `
+                    <span class="inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold border ${badgeColor}">
+                        ${escapeHtml(book.status)}
+                    </span>
+                `;
+
+                document.getElementById('viewModal').classList.remove('hidden');
+            } catch (err) {
+                showToast('Unable to fetch book details', 'error');
+            }
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+        }
+
+        // Update Status Workflow
         async function updateStatus(id, newStatus) {
             try {
                 const res = await fetch(`/api/books/${id}`, {
@@ -389,7 +503,7 @@
                     body: JSON.stringify({ status: newStatus })
                 });
                 if (!res.ok) throw new Error('Status update failed');
-                showToast(`Book #${id} status changed to ${newStatus}`, 'success');
+                showToast(`Book #${id} updated to "${newStatus}"`, 'success');
                 loadStats();
                 loadBooks();
             } catch (err) {
@@ -397,26 +511,28 @@
             }
         }
 
+        // Delete Workflow
         async function deleteBook(id) {
-            if (!confirm(`Are you sure you want to remove Book #${id} from the catalog?`)) return;
+            if (!confirm(`Are you sure you want to remove Book #${id} from the library catalog?`)) return;
             try {
                 const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Delete failed');
-                showToast(`Book #${id} removed from catalog`, 'success');
+                showToast(`Book #${id} deleted from catalog`, 'success');
                 loadStats();
+                loadCategories();
                 loadBooks();
             } catch (err) {
                 showToast('Could not delete book', 'error');
             }
         }
 
-        // Deliverable 5: Create Record Form Submission Workflow
+        // Add Book Workflow
         async function submitNewBook(e) {
             e.preventDefault();
             const errorDiv = document.getElementById('modalError');
             const submitBtn = document.getElementById('modalSubmitBtn');
             const btnText = document.getElementById('btnSubmitText');
-            
+
             errorDiv.classList.add('hidden');
             btnText.innerText = 'Registering...';
             submitBtn.disabled = true;
@@ -436,7 +552,7 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-                
+
                 if (!res.ok) {
                     errorDiv.innerText = data.error || 'Failed to add book';
                     errorDiv.classList.remove('hidden');
@@ -451,6 +567,7 @@
                 btnText.innerText = 'Save to Catalog';
                 submitBtn.disabled = false;
                 loadStats();
+                loadCategories();
                 loadBooks();
             } catch (err) {
                 errorDiv.innerText = 'Network error while contacting the server.';
@@ -473,6 +590,8 @@
         function clearFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('statusFilter').value = 'All';
+            document.getElementById('categoryFilter').value = 'All';
+            document.getElementById('sortFilter').value = 'newest';
             loadBooks();
         }
 
@@ -507,10 +626,13 @@
             debounceTimer = setTimeout(loadBooks, 250);
         });
         document.getElementById('statusFilter').addEventListener('change', loadBooks);
+        document.getElementById('categoryFilter').addEventListener('change', loadBooks);
+        document.getElementById('sortFilter').addEventListener('change', loadBooks);
 
         window.addEventListener('DOMContentLoaded', () => {
             checkHealth();
             loadStats();
+            loadCategories();
             loadBooks();
         });
     </script>
